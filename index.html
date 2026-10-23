@@ -1,0 +1,54 @@
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Love Heart</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{display:block;margin:0 auto;max-width:100%;max-height:100vh}</style></head>
+<body><canvas id="c" width="800" height="800"></canvas>
+<script>
+const ctx=document.getElementById("c").getContext("2d");
+const SC=22, OY=10, FONT='Arial,"Noto Sans",sans-serif';
+function mb(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rng=mb(11), uni=(a,b)=>a+(b-a)*rng();
+const PHRASES=["I love you","Seni seviyorum","Te amo","Je t'aime","Ich liebe dich","Ti amo",
+"Eu te amo","Я тебя люблю","愛してる","我爱你","사랑해","मैं तुमसे प्यार करता हूँ","Σ' αγαπώ",
+"Ik hou van jou","Jag älskar dig","Kocham cię","ฉันรักเธอ","Anh yêu em","Aku cinta kamu","Я тебе кохаю"];
+const heart=a=>[16*Math.sin(a)**3*SC,
+ (13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))*SC+OY];
+const OUT=Array.from({length:600},(_,i)=>heart(i*2*Math.PI/600));
+function inside(px,py){let h=false;
+ for(let i=0,j=OUT.length-1;i<OUT.length;j=i++){const[xi,yi]=OUT[i],[xj,yj]=OUT[j];
+ if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)h=!h}return h}
+const ok=(x,y,m)=>[[m,0],[-m,0],[0,m],[0,-m]].every(([a,b])=>inside(x+a,y+b));
+const font=s=>`bold ${s}px ${FONT}`;
+const placed=[], items=[];
+const free=(x,y,w,h)=>placed.every(([a,b,c,d])=>!(Math.abs(x-a)<(w+c)/2+3&&Math.abs(y-b)<(h+d)/2+2));
+function add(x,y,size,dim){const t=PHRASES[Math.floor(rng()*PHRASES.length)];
+ ctx.font=font(size);const w=ctx.measureText(t).width,h=size*1.25;
+ if(!free(x,y,w,h))return false;placed.push([x,y,w,h]);items.push({x,y,t,size,dim,born:0});return true}
+
+// 1) words along the outline: right side down to the tip, then up the left side
+let acc=0;
+for(let i=1;i<=OUT.length;i++){
+ const p=OUT[i%OUT.length],q=OUT[i-1];acc+=Math.hypot(p[0]-q[0],p[1]-q[1]);
+ if(acc>=15){acc=0;add(p[0],p[1],Math.round(uni(10,14)),uni(.75,1))}}
+const outlineCount=items.length;
+// 2) interior words
+for(let n=0;n<9000;n++){const x=uni(-380,380),y=uni(-380,380);
+ if(ok(x,y,26))add(x,y,Math.round(uni(8,14)),uni(.6,1))}
+
+const total=items.length;
+let shown=0,last=0;
+function frame(now){
+ // outline words come a bit faster than interior ones
+ const delay=shown<outlineCount?22:28;
+ if(shown<total&&now-last>delay){items[shown].born=now;shown++;last=now}
+ ctx.clearRect(0,0,800,800);ctx.textAlign="center";ctx.textBaseline="middle";
+ for(let i=0;i<shown;i++){const it=items[i],k=Math.min(1,(now-it.born)/600);
+  const r=255,g=Math.round(255-(255-45)*k),b=Math.round(255-(255-45)*k);  // white flash -> red
+  ctx.globalAlpha=it.dim*(.3+.7*k);
+  ctx.font=font(it.size);ctx.fillStyle=`rgb(${r},${g},${b})`;
+  ctx.fillText(it.t,400+it.x,400-it.y)}
+ ctx.globalAlpha=1;requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script></body></html>
